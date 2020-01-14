@@ -6,6 +6,7 @@ import RPi.GPIO as GPIO
 
 RELAYS = {"one": 37, "two": 38, "three": 40}
 GPIO.setmode(GPIO.BOARD)
+GPIO.setwarnings(False)
 GPIO.setup(RELAYS["one"], GPIO.OUT)
 GPIO.setup(RELAYS["two"], GPIO.OUT)
 GPIO.setup(RELAYS["three"], GPIO.OUT)
@@ -18,7 +19,7 @@ def api_root():
     for channel in ["one","two","three"]:
       array.append({ 
           'channel': channel,
-          'state':  GPIO.input(RELAYS[channel])
+          'state':  bool(GPIO.input(RELAYS[channel]))
           })
     return array
 
@@ -26,11 +27,15 @@ def api_root():
 @app.route('/relays/<channel>/', methods=["GET", "POST"])
 def api_relays_control(channel):
     if request.method == "POST":
-        if channel in RELAYS:
+        if channel in RELAYS and "state" in request.data:
             GPIO.output(RELAYS[channel], int(request.data.get("state")))
+
+        if channel in RELAYS and "toggle" in request.data:
+            GPIO.output(RELAYS[channel], not GPIO.input(RELAYS[channel]))
+
     return { 
              'channel': channel,
-             'state': GPIO.input(RELAYS[channel]) 
+             'state': bool(GPIO.input(RELAYS[channel]))
            }
 
 if __name__ == "__main__":
