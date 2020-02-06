@@ -1,43 +1,42 @@
-#!/usr/bin/python
-
-from flask import request, jsonify
-from flask_api import FlaskAPI
 import RPi.GPIO as GPIO
+from config import Config
 
-RELAYS = {"one": 37, "two": 38, "three": 40}
-GPIO.setmode(GPIO.BOARD)
-GPIO.setwarnings(False)
-GPIO.setup(RELAYS["one"], GPIO.OUT)
-GPIO.setup(RELAYS["two"], GPIO.OUT)
-GPIO.setup(RELAYS["three"], GPIO.OUT)
 
-app = FlaskAPI(__name__)
+class Lights():
 
-@app.route('/relays/', methods=["GET"])
-def api_root():
-    array = []
-    for channel in ["one","two","three"]:
-      array.append({ 
-          'channel': channel,
-          'state':  bool(GPIO.input(RELAYS[channel]))
-          })
-    return array
 
-  
-@app.route('/relays/<channel>/', methods=["GET", "POST"])
-def api_relays_control(channel):
-    if request.method == "POST":
-        if channel in RELAYS and "state" in request.data:
-            GPIO.output(RELAYS[channel], int(request.data.get("state")))
+    def __init__(self, relays: dict, reverseLogic = False ):
+        self.relays = relays
+        self._initializeGPIO(relays)
+        self.reverseLogic = reverseLogic
+        
 
-        if channel in RELAYS and "toggle" in request.data:
-            GPIO.output(RELAYS[channel], not GPIO.input(RELAYS[channel]))
+    def on(self, channel: int):
+        GPIO.output(RELAYS[channel], self._reverseLogic(self.reverseLogic, True))
+        return
 
-    return { 
-             'channel': channel,
-             'state': bool(GPIO.input(RELAYS[channel]))
-           }
+    def off(self, channel: int):
+        GPIO.output(RELAYS[channel], self._reverseLogic(self.reverseLogic, False))
+        return
 
-if __name__ == "__main__":
-    app.run(debug=True)
+    def switch(self, channel: int, state: bool):
+        GPIO.output(RELAYS[channel], self._reverseLogic(self.reverseLogic, state))
+        return
+
+    def status(self, channel: int) -> bool:
+        return self._reverseLogic(self.reverseLogic, bool(GPIO.input(self.relays[channel])))
+
+    def _reverseLogic(self, isReversed: bool, status) -> bool:
+        if(isReversed):
+            return not status
+        return status
+
+    def _initializeGPIO(self, relays: dict):
+        GPIO.setmode(GPIO.BOARD)
+        GPIO.setwarnings(False)
+        #TODO - Add foreach loop here
+        GPIO.setup(RELAYS["one"], GPIO.OUT)
+        GPIO.setup(RELAYS["two"], GPIO.OUT)
+        GPIO.setup(RELAYS["three"], GPIO.OUT)
+        #TODO - End foreach loop here`
 
