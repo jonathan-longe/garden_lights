@@ -1,31 +1,65 @@
-from flask import Flask, request
 from apscheduler.schedulers.background import BackgroundScheduler
-from datetime import datetime
+from datetime import datetime, timedelta, date
 from dateutil import parser
+from config import Config
+from dusk import Dusk
+#from lights import Lights
 import logging
-schedule_app = Flask(__name__)
 
-# initialize scheduler with your preferred timezone
-scheduler = BackgroundScheduler({'apscheduler.timezone': 'America/Vancouver'})
-scheduler.start()
+class LightSchedule():
 
-
-
-@schedule_app.route('/schedulePrint', methods=['POST'])
-def schedule_to_print():
-    data = request.get_json()
-    #get time to schedule and text to print from the json
-    datetime_string = data.get('time')
-    text = data.get('text')
-    
-    #convert to datetime
-    date_time = parser.parse(datetime_string)
-
-    #schedule the method 'printing_something' to run the the given 'date_time' with the args 'text'
-    job = scheduler.add_job(printing_something, trigger='date', next_run_time=str(date_time),
-                            args=[text])
-    return "job details: %s" % job
+    def __init__(self, config, dusk, lights):
+        # initialize scheduler with your preferred timezone
+        self.dusk = dusk,
+        self.lights = lights,
+        self.config = config,
+        self.scheduler = BackgroundScheduler({'apscheduler.timezone': config.TIMEZONE})
+        self.scheduler.start()
 
 
-def printing_something(text):
-    print("printing %s at %s" % (text, datetime.now()))
+    def main(self, config):
+        # Lookup today's dusktime 
+        # If it's not yet dusktime, schedule lights to turn on today at dusk
+
+        currentDateTime = datetime.now()  #config.LIGHTS_OFF_TIME
+        lightsOffList = config.LIGHTS_OFF_TIME.split(":")
+        
+        lightsOffDateTime = currentDateTime.replace(hour=int(lightsOffList[0]), minute=int(lightsOffList[1]))
+        logging.warning('** - lights off at: ' + str(lightsOffDateTime))
+
+        # If it's past dusktime, schedule the lights to turn on tomorrow at dusk
+        
+
+
+
+    def lightsOn(self, lights, config ):
+        # Turn the lights on
+        logging.warning('********** Lights On *************')
+
+        # Schedule to turn the lights off at time set in config
+        lightOffDateTime = config.LIGHTS_OFF_TIME 
+        job = self.scheduler.add_job(self.lightsOff, trigger='date', next_run_time=str(date_time),
+                                args=[self.lights, self.config])
+        logging.warning("job details: %s" % job)
+
+
+    def lightsOff(self, lights, config ):
+        # Turn the lights off
+        logging.warning('********** Lights Off *************')
+
+        # Look up tomorrow's dusktime 
+
+        # Schedule to turn the lights on at the next dusktime
+        job = self.scheduler.add_job(self.lightsOn, trigger='date', next_run_time=str(date_time),
+                                args=[self.lights, self.config])
+        logging.warning("job details: %s" % job)
+
+
+
+
+    def printing_something(text):
+            print("printing %s at %s" % (text, datetime.now()))
+
+
+if __name__ == "__main__":
+    LightSchedule(Config(), Dusk(Config()), Dusk(Config()) ).main(Config())

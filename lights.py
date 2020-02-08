@@ -5,10 +5,10 @@ from config import Config
 class Lights():
 
 
-    def __init__(self, relays: dict, reverseLogic = False ):
-        self.relays = relays
-        self._initializeGPIO(relays)
-        self.reverseLogic = reverseLogic
+    def __init__(self, config ):
+        self.relays = config.RELAYS
+        self._initializeGPIO(self.relays)
+        self.reverseLogic = config.REVERSE_LOGIC
         
 
     def on(self, channel: int):

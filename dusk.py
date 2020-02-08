@@ -1,5 +1,4 @@
 
-from config import Config
 from astral import Astral
 from datetime import date
 import logging
@@ -7,16 +6,15 @@ import logging
 
 class Dusk():    
 
-    def __init__(self, majorCityName: str):
-        self.majorCityName = majorCityName
+    def __init__(self, config):
+        self.majorCityName = config.MAJOR_NEARBY_CITY
         self.astral = Astral()
-        logging.warning(majorCityName)
+        logging.warning('dusk initialized. Closest major city is: ' + self.majorCityName)
 
 
-    def getCurrentDuskTime(self):
+    def getCurrentDuskTime(self, d: date ):
         self.astral.solar_depression = 'civil'
         location = self.astral[self.majorCityName]
-        d = date.today()
         sun = location.sun( d, True )
 
         return str(sun['dusk'])
