@@ -12,10 +12,9 @@ class Dusk():
         logging.warning('dusk initialized. Closest major city is: ' + self.majorCityName)
 
 
-    def getCurrentDuskTime(self, d: date ):
+    def getDuskTime(self, d: date ):
         self.astral.solar_depression = 'civil'
         location = self.astral[self.majorCityName]
         sun = location.sun( d, True )
 
         return str(sun['dusk'])
-        

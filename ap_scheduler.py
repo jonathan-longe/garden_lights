@@ -5,61 +5,88 @@ from config import Config
 from dusk import Dusk
 #from lights import Lights
 import logging
+from time import sleep
+import sys
+
 
 class LightSchedule():
 
-    def __init__(self, config, dusk, lights):
+    def main(self, config, dusk):
+        
         # initialize scheduler with your preferred timezone
-        self.dusk = dusk,
-        self.lights = lights,
-        self.config = config,
-        self.scheduler = BackgroundScheduler({'apscheduler.timezone': config.TIMEZONE})
+        self.scheduler = BackgroundScheduler({
+            'apscheduler.timezone': config.TIMEZONE
+            })
         self.scheduler.start()
 
+        # Look up today's dusktime 
+        todayDuskDateTime = dusk.getDuskTime(date.today())
+        logging.warning("** - today's dusk time at: " + str(todayDuskDateTime))
 
-    def main(self, config):
-        # Lookup today's dusktime 
-        # If it's not yet dusktime, schedule lights to turn on today at dusk
+        # Schedule to turn the lights on today at dusk
+        job = self.scheduler.add_job(
+            self.lightsOn, 
+            misfire_grace_time=86400, 
+            trigger='date', 
+            next_run_time=str(todayDuskDateTime),
+            args=[config]
+        )
+        logging.warning("scheduled job added: %s" % job)
+        logging.warning("misfire_grace_time: " + str(job.misfire_grace_time) )
 
-        currentDateTime = datetime.now()  #config.LIGHTS_OFF_TIME
-        lightsOffList = config.LIGHTS_OFF_TIME.split(":")
-        
-        lightsOffDateTime = currentDateTime.replace(hour=int(lightsOffList[0]), minute=int(lightsOffList[1]))
-        logging.warning('** - lights off at: ' + str(lightsOffDateTime))
+        # If it's after dusk, the scheduled job will recognize that it's 
+        # been missed and turn the lights on immediately and schedule the 
+        # lights to go off at the time set in config.  If's after the lights
+        # off time, both the lights-on and lights-off job will be executed 
+        # immediately leaving the lights in the off state.
 
-        # If it's past dusktime, schedule the lights to turn on tomorrow at dusk
-        
+        while True:
+            sleep(60)
+            sys.stdout.write('.'); sys.stdout.flush()
 
 
 
-    def lightsOn(self, lights, config ):
+    def lightsOn(self, config ):
         # Turn the lights on
         logging.warning('********** Lights On *************')
 
         # Schedule to turn the lights off at time set in config
-        lightOffDateTime = config.LIGHTS_OFF_TIME 
-        job = self.scheduler.add_job(self.lightsOff, trigger='date', next_run_time=str(date_time),
-                                args=[self.lights, self.config])
-        logging.warning("job details: %s" % job)
+        currentDateTime = datetime.now()  #config.LIGHTS_OFF_TIME
+        lightsOffList = config.LIGHTS_OFF_TIME.split(":")
+        lightsOffDateTime = currentDateTime.replace(hour=int(lightsOffList[0]), minute=int(lightsOffList[1]))
+        logging.warning('** - lights off time: ' + str(lightsOffDateTime))
+
+        job = self.scheduler.add_job(
+            self.lightsOff, 
+            misfire_grace_time=86400, 
+            trigger='date', 
+            next_run_time=str(lightsOffDateTime),
+            args=[config, Dusk(config)]
+        )
+        logging.warning("scheduled job added: %s" % job)
 
 
-    def lightsOff(self, lights, config ):
+    def lightsOff(self, config, dusk ):
         # Turn the lights off
         logging.warning('********** Lights Off *************')
 
         # Look up tomorrow's dusktime 
+        tomorrow = date.today() + timedelta(days=1)
+        tomorrowDuskDateTime = dusk.getDuskTime(tomorrow)
+        logging.warning('** - dusk time at: ' + str(tomorrowDuskDateTime))
 
         # Schedule to turn the lights on at the next dusktime
-        job = self.scheduler.add_job(self.lightsOn, trigger='date', next_run_time=str(date_time),
-                                args=[self.lights, self.config])
-        logging.warning("job details: %s" % job)
+        job = self.scheduler.add_job(
+            self.lightsOn, 
+            misfire_grace_time=86400,
+            trigger='date', 
+            next_run_time=str(tomorrowDuskDateTime),
+            args=[config]
+        )
+        logging.warning("scheduled job added: %s" % job)
 
 
-
-
-    def printing_something(text):
-            print("printing %s at %s" % (text, datetime.now()))
-
+    
 
 if __name__ == "__main__":
-    LightSchedule(Config(), Dusk(Config()), Dusk(Config()) ).main(Config())
+    LightSchedule().main(Config(), Dusk(Config()))
