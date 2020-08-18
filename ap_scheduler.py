@@ -1,15 +1,18 @@
 from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import datetime, timedelta, date
-from dateutil import parser
 from config import Config
 from dusk import Dusk
-#from lights import Lights
+from lights import Lights
 import logging
 from time import sleep
 import sys
 
 
 class LightSchedule():
+
+    def __init__(self, lights):
+        self.lights = lights
+
 
     def main(self, config, dusk):
         
@@ -21,7 +24,7 @@ class LightSchedule():
 
         # Look up today's dusktime 
         todayDuskDateTime = dusk.getDuskTime(date.today())
-        logging.warning("** - today's dusk time at: " + str(todayDuskDateTime))
+        logging.warning("** - today's sunset at: " + str(todayDuskDateTime))
 
         # Schedule to turn the lights on today at dusk
         job = self.scheduler.add_job(
@@ -49,6 +52,7 @@ class LightSchedule():
     def lightsOn(self, config ):
         # Turn the lights on
         logging.warning('********** Lights On *************')
+        self.lights.switch('one', True)
 
         # Schedule to turn the lights off at time set in config
         currentDateTime = datetime.now()  #config.LIGHTS_OFF_TIME
@@ -69,6 +73,7 @@ class LightSchedule():
     def lightsOff(self, config, dusk ):
         # Turn the lights off
         logging.warning('********** Lights Off *************')
+        self.lights.switch('one', False)
 
         # Look up tomorrow's dusktime 
         tomorrow = date.today() + timedelta(days=1)
@@ -89,4 +94,4 @@ class LightSchedule():
     
 
 if __name__ == "__main__":
-    LightSchedule().main(Config(), Dusk(Config()))
+    LightSchedule(Lights(Config())).main(Config(), Dusk(Config()))
