@@ -1,16 +1,17 @@
+from flask import Flask
+from config import Config
 from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import datetime, timedelta, date
-from config import Config
 from lights import Lights
-from time import sleep
-import sys
 from astral import Astral
 import logging
 
+lights = Lights(Config)
 
-def main():
 
-    lights = Lights(Config)
+def create_app(config_class=Config):
+    app = Flask(__name__)
+    app.config.from_object(config_class)
 
     # initialize scheduler with your preferred timezone
     scheduler = BackgroundScheduler({'apscheduler.timezone': Config.TIMEZONE})
@@ -37,9 +38,10 @@ def main():
     # off time, both the lights-on and lights-off job will be executed
     # immediately leaving the lights in the off state.
 
-    while True:
-        sleep(60)
-        sys.stdout.write('.'); sys.stdout.flush()
+    from routes import bp
+    app.register_blueprint(bp)
+
+    return app
 
 
 def lights_on(major_nearby_city, light_off_time: str, lights, scheduler):
@@ -89,6 +91,3 @@ def get_today_dusk_datetime(closest_major_city_name: str, today_date: date) -> d
     sun = location.sun(today_date, True)
     return sun['dusk']
 
-
-if __name__ == "__main__":
-    main()
