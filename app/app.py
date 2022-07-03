@@ -44,10 +44,10 @@ def create_app(config_class=Config):
     return app
 
 
-def lights_on(major_nearby_city, light_off_time: str, lights, scheduler):
+def lights_on(major_nearby_city, light_off_time: str, local_lights, scheduler):
     # Turn the lights on
     logging.warning('********** Lights On *************')
-    lights.switch('one', True)
+    local_lights.switch('one', True)
 
     # Schedule to turn the lights off at time set in config
     current_dt = datetime.now()  # config.LIGHTS_OFF_TIME
@@ -56,7 +56,7 @@ def lights_on(major_nearby_city, light_off_time: str, lights, scheduler):
     logging.warning('** - lights off time: ' + str(lights_off_dt))
 
     job = scheduler.add_job(
-        lights_off(major_nearby_city, light_off_time, lights, scheduler),
+        lights_off(major_nearby_city, light_off_time, local_lights, scheduler),
         misfire_grace_time=86400,
         trigger='date',
         next_run_time=lights_off_dt
@@ -64,10 +64,10 @@ def lights_on(major_nearby_city, light_off_time: str, lights, scheduler):
     logging.warning("scheduled job added: %s" % job)
 
 
-def lights_off(major_nearby_city, lights_off_time, lights, scheduler):
+def lights_off(major_nearby_city, lights_off_time, local_lights, scheduler):
     # Turn the lights off
     logging.warning('********** Lights Off *************')
-    lights.switch('one', False)
+    local_lights.switch('one', False)
 
     # Look up tomorrow's dusk time
     tomorrow = date.today() + timedelta(days=1)
@@ -76,7 +76,7 @@ def lights_off(major_nearby_city, lights_off_time, lights, scheduler):
 
     # Schedule to turn the lights on at the next dusk time
     job = scheduler.add_job(
-        lights_on(major_nearby_city, lights_off_time, lights, scheduler),
+        lights_on(major_nearby_city, lights_off_time, local_lights, scheduler),
         misfire_grace_time=86400,
         trigger='date',
         next_run_time=tomorrow_dusk_dt
