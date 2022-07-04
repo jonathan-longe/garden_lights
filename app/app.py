@@ -24,11 +24,11 @@ def create_app(config_class=Config):
 
     # Schedule to turn the lights on today at dusk
     job = scheduler.add_job(
-        lights_on(Config.MAJOR_NEARBY_CITY, Config.LIGHTS_OFF_TIME, lights, scheduler),
+        lights_on,
         misfire_grace_time=Config.MISFIRE_GRACE_TIME,
         trigger='date',
         next_run_time=today_dusk_dt,
-        args=[Config]
+        args=[Config.MAJOR_NEARBY_CITY, Config.LIGHTS_OFF_TIME, lights, scheduler]
     )
     logging.warning("scheduled job added: %s" % job)
     logging.warning("misfire_grace_time: " + str(job.misfire_grace_time))
@@ -60,10 +60,11 @@ def lights_on(major_nearby_city, light_off_time: str, local_lights, local_schedu
     logging.warning('** - lights off time: ' + str(lights_off_dt))
 
     job = local_scheduler.add_job(
-        lights_off(major_nearby_city, light_off_time, local_lights, local_scheduler),
+        lights_off,
         misfire_grace_time=Config.MISFIRE_GRACE_TIME,
         trigger='date',
-        next_run_time=lights_off_dt
+        next_run_time=lights_off_dt,
+        args=[major_nearby_city, light_off_time, local_lights, local_scheduler]
     )
     logging.warning("scheduled job added: %s" % job)
 
@@ -80,10 +81,11 @@ def lights_off(major_nearby_city, lights_off_time, local_lights, local_scheduler
 
     # Schedule to turn the lights on at the next dusk time
     job = local_scheduler.add_job(
-        lights_on(major_nearby_city, lights_off_time, local_lights, local_scheduler),
+        lights_on,
         misfire_grace_time=Config.MISFIRE_GRACE_TIME,
         trigger='date',
-        next_run_time=tomorrow_dusk_dt
+        next_run_time=tomorrow_dusk_dt,
+        args=[major_nearby_city, lights_off_time, local_lights, local_scheduler]
     )
     logging.warning("scheduled job added: %s" % job)
 
