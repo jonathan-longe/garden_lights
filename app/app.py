@@ -10,13 +10,13 @@ import logging
 # initialize lights
 lights = Lights(Config)
 
+# initialize scheduler with your preferred timezone
+scheduler = BackgroundScheduler({'apscheduler.timezone': Config.TIMEZONE})
+
 
 def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
-
-    # initialize scheduler with your preferred timezone
-    scheduler = BackgroundScheduler({'apscheduler.timezone': Config.TIMEZONE})
 
     # Look up today's dusk time
     today_dusk_dt = get_today_dusk_datetime(Config.MAJOR_NEARBY_CITY, date.today())
@@ -96,3 +96,5 @@ def get_today_dusk_datetime(closest_major_city_name: str, today_date: date) -> d
     location = astral[closest_major_city_name]
     sun = location.sun(today_date, True)
     return sun['dusk']
+
+
