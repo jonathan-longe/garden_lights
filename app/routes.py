@@ -2,17 +2,20 @@ from flask import Blueprint, make_response
 from app import lights
 from app import scheduler
 
-bp = Blueprint('main', __name__)
+bp = Blueprint('main', __name__, url_prefix='/api')
 
 
 @bp.get("/status")
-def index():
+def status():
     return make_response({"is_lights_on": lights.status("one")})
 
 
 @bp.get("/schedule")
-def index():
+def schedule():
     jobs = scheduler.get_jobs()
     if len(jobs) > 0:
-        return make_response({"jobs": str(jobs[0].next_run_time)})
+        return make_response({
+            "next_dt": str(jobs[0].next_run_time),
+            "function": jobs[0].func
+        })
     return make_response({"jobs": "none"})
