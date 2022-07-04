@@ -16,6 +16,6 @@ def schedule():
     if len(jobs) > 0:
         return make_response({
             "next_dt": str(jobs[0].next_run_time),
-            "function": jobs[0].func
+            "function": jobs[0].func.__name__
         })
     return make_response({"jobs": "none"})
