@@ -10,14 +10,13 @@ import logging
 # initialize lights
 lights = Lights(Config)
 
-# initialize scheduler with your preferred timezone
-scheduler = BackgroundScheduler({'apscheduler.timezone': Config.TIMEZONE})
-scheduler.start()
-
 
 def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
+
+    # initialize scheduler with your preferred timezone
+    scheduler = BackgroundScheduler({'apscheduler.timezone': Config.TIMEZONE})
 
     # Look up today's dusk time
     today_dusk_dt = get_today_dusk_datetime(Config.MAJOR_NEARBY_CITY, date.today())
@@ -33,6 +32,8 @@ def create_app(config_class=Config):
     )
     logging.warning("scheduled job added: %s" % job)
     logging.warning("misfire_grace_time: " + str(job.misfire_grace_time))
+
+    scheduler.start()
 
     # If it's after dusk, the scheduled job will recognize that it's
     # been missed and turn the lights on immediately and schedule the
