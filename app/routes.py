@@ -1,9 +1,12 @@
 from flask import Blueprint, make_response
-from prometheus_client import Enum
+from prometheus_client import Enum, generate_latest
 from app import lights
 from app import scheduler
 
-bp = Blueprint('main', __name__, url_prefix='/api')
+bp = Blueprint('main', __name__)
+
+e = Enum('garden_lights_state', 'The status of the garden lights',
+          states=['lights-on', 'lights-off'])
 
 
 @bp.get("/status")
@@ -24,8 +27,8 @@ def schedule():
 
 @bp.get("/metrics")
 def metrics():
-    e = Enum('garden_lights_state', 'Are the lights on or off?',
-             states=['lights-on', 'lights-off'])
+    e.state('lights-off')
     if lights.status("one"):
-        return e.state('lights-on')
-    return e.state('lights-off')
+        e.state('lights-on')
+    return generate_latest()
+
