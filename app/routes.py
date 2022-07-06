@@ -1,4 +1,5 @@
 from flask import Blueprint, make_response
+from prometheus_client import Enum
 from app import lights
 from app import scheduler
 
@@ -19,3 +20,12 @@ def schedule():
             "function": jobs[0].func.__name__
         })
     return make_response({"jobs": "none"})
+
+
+@bp.get("/metrics")
+def metrics():
+    e = Enum('garden_lights_state', 'Are the lights on or off?',
+             states=['lights-on', 'lights-off'])
+    if lights.status("one"):
+        return e.state('lights-on')
+    return e.state('lights-off')
